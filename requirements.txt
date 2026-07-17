@@ -1,0 +1,6 @@
+﻿pandas>=3.0
+numpy>=2.0
+requests>=2.32
+scikit-learn>=1.6
+joblib>=1.4
+soccerdata>=1.9
