@@ -47,12 +47,13 @@ Like most football models, this one rarely predicts draws as the single most lik
 ```
 football-predictor/
 ├── src/
-│   ├── collect_data.py       # download historical match data
-│   ├── collect_players.py    # scrape player stats (FBref via soccerdata)
-│   ├── build_features.py     # engineer leakage-free features
-│   ├── train_model.py        # train and evaluate models
-│   └── predict_upcoming.py   # predict upcoming fixtures
-├── data/                     # generated datasets (gitignored)
+│   ├── collect_data.py           # download historical match data
+│   ├── collect_players.py        # scrape player stats (FBref via soccerdata)
+│   ├── build_features.py         # engineer leakage-free features
+│   ├── train_model.py            # train and evaluate models
+│   ├── predict_upcoming.py       # predict upcoming fixtures
+│   └── export_dashboard_data.py  # export CSVs for the Power BI dashboard
+├── data/                     # datasets (raw data gitignored; sample outputs included)
 ├── models/                   # trained model (gitignored)
 ├── requirements.txt
 └── README.md
@@ -80,6 +81,7 @@ python src/collect_players.py
 python src/build_features.py
 python src/train_model.py
 python src/predict_upcoming.py
+python src/export_dashboard_data.py
 ```
 
 To predict specific fixtures, create `data/upcoming_fixtures.csv`:
