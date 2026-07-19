@@ -4,6 +4,13 @@ A machine learning pipeline that predicts English Premier League match outcomes 
 
 Trained on 11 seasons of Premier League results, the match model reaches **49.5% accuracy** on a held-out season, beating the majority-class baseline of 42.6%. For context, professional bookmakers and published academic models typically land around 50 to 53% on this task, so the model performs close to that range.
 
+## Dashboard
+
+<img width="894" height="701" alt="Football Predictor Dashboard" src="https://github.com/user-attachments/assets/f260ca9f-58c1-4d03-a5f1-5f70f4e96109" />
+
+
+A Power BI dashboard bringing the outputs together: team strength ratings, projected player output, and win probabilities for the opening matchweek of the 2026/27 season.
+
 ## Results
 
 | Model | Test accuracy | Baseline |
@@ -43,6 +50,10 @@ The most important design decision. Every feature is computed using only matches
 ### The draw problem
 
 Like most football models, this one rarely predicts draws as the single most likely outcome, because draws lack a strong statistical signature. The pipeline addresses this by outputting probabilities (for example Home 48%, Draw 27%, Away 25%) rather than hard labels, so draw likelihood is still captured even when it is not the top pick.
+
+### Cold start for promoted teams
+
+Newly promoted clubs have little or no top-flight history, so the model has no ratings to build on and falls back to a neutral baseline. Coventry, promoted for 2026/27 after 25 years away, is the clearest case. Predictions involving these teams carry the lowest confidence, and the prediction script flags them explicitly.
 
 ## Player performance prediction
 
@@ -151,15 +162,16 @@ python src/build_database.py
 python src/run_queries.py
 ```
 
-To predict specific fixtures, create `data/upcoming_fixtures.csv`:
+To predict specific fixtures, list them in `data/upcoming_fixtures.csv`:
 
 ```csv
 HomeTeam,AwayTeam
 Arsenal,Coventry
-Man City,Tottenham
+Newcastle,Liverpool
+Man City,Bournemouth
 ```
 
-Team names must match the spelling used by football-data.co.uk.
+Team names must match the spelling used by football-data.co.uk (for example `Man United`, `Nott'm Forest`, `Tottenham`). The repository includes the full 2026/27 opening matchweek as a working example.
 
 ## What I learned
 
@@ -172,14 +184,10 @@ Team names must match the spelling used by football-data.co.uk.
 
 ## Future work
 
-- Add a Power BI dashboard to visualize predictions and team form.
 - Tune the ELO parameters (K-factor, home advantage) and model hyperparameters.
 - Incorporate expected goals (xG) as features, which requires pulling an additional FBref stat type.
+- Backtest predictions against the 2026/27 season as results come in, and retrain on fresh form data each matchweek.
 
 ## Tech stack
 
-Python, pandas, scikit-learn, SQL (SQLite), soccerdata, joblib. Data from football-data.co.uk and FBref.
-
-## Disclaimer
-
-This project is for educational and portfolio purposes. Predictions are probabilistic estimates and are not betting advice.
+Python, pandas, scikit-learn, SQL (SQLite), Power BI, soccerdata, joblib. Data from football-data.co.uk and FBref.
