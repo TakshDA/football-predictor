@@ -1,8 +1,8 @@
 # Premier League Match Predictor
 
-A machine learning pipeline that predicts English Premier League match outcomes (home win / draw / away win) from historical data, and outputs win probabilities for upcoming fixtures.
+A machine learning pipeline that predicts English Premier League match outcomes (home win / draw / away win) from historical data, outputs win probabilities for upcoming fixtures, and projects individual player performance for the following season.
 
-Trained on 11 seasons of Premier League results, the model reaches **49.5% accuracy** on a held-out season, beating the majority-class baseline of 42.6%. For context, professional bookmakers and published academic models typically land around 50 to 53% on this task, so the model performs close to that range.
+Trained on 11 seasons of Premier League results, the match model reaches **49.5% accuracy** on a held-out season, beating the majority-class baseline of 42.6%. For context, professional bookmakers and published academic models typically land around 50 to 53% on this task, so the model performs close to that range.
 
 ## Results
 
@@ -43,6 +43,32 @@ The most important design decision. Every feature is computed using only matches
 ### The draw problem
 
 Like most football models, this one rarely predicts draws as the single most likely outcome, because draws lack a strong statistical signature. The pipeline addresses this by outputting probabilities (for example Home 48%, Draw 27%, Away 25%) rather than hard labels, so draw likelihood is still captured even when it is not the top pick.
+
+## Player performance prediction
+
+A second model predicts individual player output: **goals + assists per 90 minutes for the following season**, based on current-season statistics.
+
+Because player data is season-level, the model learns from season-to-season transitions. It trains on the 2023/24 to 2024/25 transition and is tested on 2024/25 to 2025/26.
+
+The benchmark is *persistence*, simply assuming a player repeats last season's rate. That is a strong baseline in sports, which makes it a fair test.
+
+| Model | MAE | vs baseline |
+|-------|-----|-------------|
+| Ridge Regression | **0.100** | 17.9% better |
+| Random Forest | 0.105 | 14.3% better |
+| Baseline (persistence) | 0.122 | — |
+
+### Regression to the mean
+
+The most interesting result is what the model learned about elite seasons. Taking the ten highest-scoring players of 2024/25:
+
+| | Goals + assists per 90 |
+|---|---|
+| Their 2024/25 rate | 0.885 |
+| Model prediction | 0.718 |
+| Actual 2025/26 rate | 0.528 |
+
+The model correctly anticipates that outlier seasons regress toward the mean, rather than naively projecting them forward. Mohamed Salah's 1.255 was projected down to 0.875 (actual: 0.587). Erling Haaland is a notable exception, projected at 0.706 but actually improving to 1.067, a reminder that genuine outliers exist.
 
 ## SQL analysis
 
@@ -85,8 +111,9 @@ football-predictor/
 │   ├── collect_data.py           # download historical match data
 │   ├── collect_players.py        # scrape player stats (FBref via soccerdata)
 │   ├── build_features.py         # engineer leakage-free features
-│   ├── train_model.py            # train and evaluate models
+│   ├── train_model.py            # train and evaluate match models
 │   ├── predict_upcoming.py       # predict upcoming fixtures
+│   ├── predict_players.py        # player-level performance prediction
 │   ├── export_dashboard_data.py  # export CSVs for the dashboard
 │   ├── build_database.py         # load CSVs into a SQLite database
 │   └── run_queries.py            # SQL analysis queries
@@ -118,6 +145,7 @@ python src/collect_players.py
 python src/build_features.py
 python src/train_model.py
 python src/predict_upcoming.py
+python src/predict_players.py
 python src/export_dashboard_data.py
 python src/build_database.py
 python src/run_queries.py
@@ -138,15 +166,15 @@ Team names must match the spelling used by football-data.co.uk.
 - **Data leakage is the defining challenge** in sports prediction. Preventing it changed the entire structure of the feature pipeline.
 - **Time-based evaluation is non-negotiable.** A random train/test split would leak future information and inflate accuracy.
 - **Probabilities beat labels** for a problem with genuine randomness.
-- **Beating the baseline is the real bar,** not raw accuracy. 49.5% only means something once you know the naive baseline is 42.6%.
+- **Beating the baseline is the real bar,** not raw accuracy. 49.5% only means something once you know the naive baseline is 42.6%. For the player model, the fair benchmark was persistence rather than a league average.
+- **Regression to the mean is a real, learnable pattern.** The player model's main advantage over the baseline came from recognising that exceptional seasons rarely repeat.
 - **SQL and pandas complement each other.** Aggregate analysis reads more clearly as SQL, while the modeling pipeline is better suited to pandas.
 
 ## Future work
 
-- Extend to player-level performance prediction using the collected FBref data.
 - Add a Power BI dashboard to visualize predictions and team form.
 - Tune the ELO parameters (K-factor, home advantage) and model hyperparameters.
-- Incorporate expected goals (xG) as features.
+- Incorporate expected goals (xG) as features, which requires pulling an additional FBref stat type.
 
 ## Tech stack
 
