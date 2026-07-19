@@ -1,5 +1,7 @@
 # Premier League Match Predictor
+
 A machine learning pipeline that predicts English Premier League match outcomes (home win / draw / away win) from historical data, and outputs win probabilities for upcoming fixtures.
+
 Trained on 11 seasons of Premier League results, the model reaches **49.5% accuracy** on a held-out season, beating the majority-class baseline of 42.6%. For context, professional bookmakers and published academic models typically land around 50 to 53% on this task, so the model performs close to that range.
 
 ## Results
@@ -42,6 +44,39 @@ The most important design decision. Every feature is computed using only matches
 
 Like most football models, this one rarely predicts draws as the single most likely outcome, because draws lack a strong statistical signature. The pipeline addresses this by outputting probabilities (for example Home 48%, Draw 27%, Away 25%) rather than hard labels, so draw likelihood is still captured even when it is not the top pick.
 
+## SQL analysis
+
+The project data is also loaded into a SQLite database so it can be queried directly with SQL. The queries in `run_queries.py` use CTEs, window functions, conditional aggregation, and joins.
+
+A few findings from the data:
+
+- **Home advantage is declining.** The home win rate fell from 48.4% in 2022/23 to 42.6% in 2025/26. The 2020/21 season, played largely in empty stadiums, shows the lowest rate in the dataset at 37.9%.
+- **The ELO ratings track reality.** Joining the model's ratings against actual league points shows close agreement (Arsenal 1st on both measures, Man City 2nd), which validates the rating system against an independent benchmark.
+- **Man City lead the 11-season table** with 2.23 points per game and a +606 goal difference, nearly 200 goals clear of second place.
+
+Example query, building an all-time table from match results using a CTE and a window function:
+
+```sql
+WITH team_matches AS (
+    SELECT HomeTeam AS team, FTHG AS gf, FTAG AS ga,
+           CASE FTR WHEN 'H' THEN 3 WHEN 'D' THEN 1 ELSE 0 END AS pts
+    FROM matches WHERE FTR IS NOT NULL
+    UNION ALL
+    SELECT AwayTeam, FTAG, FTHG,
+           CASE FTR WHEN 'A' THEN 3 WHEN 'D' THEN 1 ELSE 0 END
+    FROM matches WHERE FTR IS NOT NULL
+)
+SELECT RANK() OVER (ORDER BY SUM(pts) DESC) AS rank,
+       team,
+       SUM(pts) AS points,
+       SUM(gf) - SUM(ga) AS goal_diff,
+       ROUND(1.0 * SUM(pts) / COUNT(*), 2) AS pts_per_game
+FROM team_matches
+GROUP BY team
+HAVING COUNT(*) >= 100
+ORDER BY points DESC;
+```
+
 ## Project structure
 
 ```
@@ -52,8 +87,10 @@ football-predictor/
 │   ├── build_features.py         # engineer leakage-free features
 │   ├── train_model.py            # train and evaluate models
 │   ├── predict_upcoming.py       # predict upcoming fixtures
-│   └── export_dashboard_data.py  # export CSVs for the Power BI dashboard
-├── data/                     # datasets (raw data gitignored; sample outputs included)
+│   ├── export_dashboard_data.py  # export CSVs for the dashboard
+│   ├── build_database.py         # load CSVs into a SQLite database
+│   └── run_queries.py            # SQL analysis queries
+├── data/                     # datasets (raw data gitignored, sample outputs included)
 ├── models/                   # trained model (gitignored)
 ├── requirements.txt
 └── README.md
@@ -82,6 +119,8 @@ python src/build_features.py
 python src/train_model.py
 python src/predict_upcoming.py
 python src/export_dashboard_data.py
+python src/build_database.py
+python src/run_queries.py
 ```
 
 To predict specific fixtures, create `data/upcoming_fixtures.csv`:
@@ -100,6 +139,7 @@ Team names must match the spelling used by football-data.co.uk.
 - **Time-based evaluation is non-negotiable.** A random train/test split would leak future information and inflate accuracy.
 - **Probabilities beat labels** for a problem with genuine randomness.
 - **Beating the baseline is the real bar,** not raw accuracy. 49.5% only means something once you know the naive baseline is 42.6%.
+- **SQL and pandas complement each other.** Aggregate analysis reads more clearly as SQL, while the modeling pipeline is better suited to pandas.
 
 ## Future work
 
@@ -110,7 +150,7 @@ Team names must match the spelling used by football-data.co.uk.
 
 ## Tech stack
 
-Python, pandas, scikit-learn, soccerdata, joblib. Data from football-data.co.uk and FBref.
+Python, pandas, scikit-learn, SQL (SQLite), soccerdata, joblib. Data from football-data.co.uk and FBref.
 
 ## Disclaimer
 
