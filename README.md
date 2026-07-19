@@ -44,6 +44,10 @@ The most important design decision. Every feature is computed using only matches
 
 Like most football models, this one rarely predicts draws as the single most likely outcome, because draws lack a strong statistical signature. The pipeline addresses this by outputting probabilities (for example Home 48%, Draw 27%, Away 25%) rather than hard labels, so draw likelihood is still captured even when it is not the top pick.
 
+### Cold start for promoted teams
+
+Newly promoted clubs have little or no top-flight history, so the model has no ratings to build on and falls back to a neutral baseline. Coventry, promoted for 2026/27 after 25 years away, is the clearest case. Predictions involving these teams carry the lowest confidence, and the prediction script flags them explicitly.
+
 ## Player performance prediction
 
 A second model predicts individual player output: **goals + assists per 90 minutes for the following season**, based on current-season statistics.
@@ -151,15 +155,16 @@ python src/build_database.py
 python src/run_queries.py
 ```
 
-To predict specific fixtures, create `data/upcoming_fixtures.csv`:
+To predict specific fixtures, list them in `data/upcoming_fixtures.csv`:
 
 ```csv
 HomeTeam,AwayTeam
 Arsenal,Coventry
-Man City,Tottenham
+Newcastle,Liverpool
+Man City,Bournemouth
 ```
 
-Team names must match the spelling used by football-data.co.uk.
+Team names must match the spelling used by football-data.co.uk (for example `Man United`, `Nott'm Forest`, `Tottenham`). The repository includes the full 2026/27 opening matchweek as a working example.
 
 ## What I learned
 
