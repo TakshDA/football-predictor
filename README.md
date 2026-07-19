@@ -4,6 +4,13 @@ A machine learning pipeline that predicts English Premier League match outcomes 
 
 Trained on 11 seasons of Premier League results, the match model reaches **49.5% accuracy** on a held-out season, beating the majority-class baseline of 42.6%. For context, professional bookmakers and published academic models typically land around 50 to 53% on this task, so the model performs close to that range.
 
+## Dashboard
+
+<img width="894" height="701" alt="Football Predictor Dashboard" src="https://github.com/user-attachments/assets/f260ca9f-58c1-4d03-a5f1-5f70f4e96109" />
+
+
+A Power BI dashboard bringing the outputs together: team strength ratings, projected player output, and win probabilities for the opening matchweek of the 2026/27 season.
+
 ## Results
 
 | Model | Test accuracy | Baseline |
@@ -177,14 +184,10 @@ Team names must match the spelling used by football-data.co.uk (for example `Man
 
 ## Future work
 
-- Add a Power BI dashboard to visualize predictions and team form.
 - Tune the ELO parameters (K-factor, home advantage) and model hyperparameters.
 - Incorporate expected goals (xG) as features, which requires pulling an additional FBref stat type.
+- Backtest predictions against the 2026/27 season as results come in, and retrain on fresh form data each matchweek.
 
 ## Tech stack
 
-Python, pandas, scikit-learn, SQL (SQLite), soccerdata, joblib. Data from football-data.co.uk and FBref.
-
-## Disclaimer
-
-This project is for educational and portfolio purposes. Predictions are probabilistic estimates and are not betting advice.
+Python, pandas, scikit-learn, SQL (SQLite), Power BI, soccerdata, joblib. Data from football-data.co.uk and FBref.
